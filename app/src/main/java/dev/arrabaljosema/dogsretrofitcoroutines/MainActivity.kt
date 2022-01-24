@@ -2,6 +2,8 @@ package dev.arrabaljosema.dogsretrofitcoroutines
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.widget.Toast
+import androidx.recyclerview.widget.LinearLayoutManager
 import dev.arrabaljosema.dogsretrofitcoroutines.databinding.ActivityMainBinding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -12,6 +14,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+    private lateinit var adapter: DogAdapter
+    private var dogImages = mutableListOf<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -21,7 +25,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initRecyclerView() {
-        TODO("Not yet implemented")
+        /* Se necesita la var adapter e igualarla al adapter pasándole una lista,
+        * ahora en el searchByName, cuando se recupere el listado de imágenes se le empiezan a meter */
+        adapter = DogAdapter(dogImages)
+        binding.rvDogs.layoutManager = LinearLayoutManager(this)
+        binding.rvDogs.adapter = adapter
     }
 
     /* Se crea instancia del objeto retrofit. Va a tener url original, conversor json a este
@@ -39,11 +47,20 @@ class MainActivity : AppCompatActivity() {
         CoroutineScope(Dispatchers.IO).launch {
             val call = getRetrofit().create(ApiService::class.java).getDogsByBreed("$query/images")
             val puppies = call.body()
-            if (call.isSuccessful){
-                // Show recyclerview
-            }else{
-                // Show error
+            runOnUiThread {
+                if (call.isSuccessful) {
+                    val images = puppies?.images ?: emptyList()
+                    dogImages.clear()
+                    dogImages.addAll(images)
+                    adapter.notifyDataSetChanged()
+                } else {
+                    showError()
+                }
             }
         }
+    }
+
+    private fun showError() {
+        Toast.makeText(this, "Fallo en la comunicación", Toast.LENGTH_SHORT).show()
     }
 }
